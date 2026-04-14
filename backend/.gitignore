@@ -18,6 +18,7 @@ bin/
 !**/src/test/**/bin/
 
 ### IntelliJ IDEA ###
+.idea/
 .idea
 *.iws
 *.iml
@@ -35,3 +36,22 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Java / Gradle
+backend/.gradle/
+backend/build/
+backend/out/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Env files
+.env
+.env.local
+.env.production
+
+# OS
+.DS_Store
+Thumbs.db
+
