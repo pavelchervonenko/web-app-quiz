@@ -42,7 +42,7 @@ backend/.gradle/
 backend/build/
 backend/out/
 
-# Node
+ks# Node
 frontend/node_modules/
 frontend/dist/
 
