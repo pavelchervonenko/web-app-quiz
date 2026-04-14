@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: web-quiz-app
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+
+server:
+  port: 8080
