@@ -3,6 +3,8 @@ plugins {
     id("checkstyle")
     id("org.springframework.boot") version "4.0.5"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.sonarqube") version "7.2.3.7755"
+    id("jacoco")
 }
 
 group = "com.quizapp"
@@ -59,4 +61,22 @@ checkstyle {
     toolVersion = "13.3.0"
     configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
     isIgnoreFailures = false
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "pavelchervonenko_web-app-quiz")
+        property("sonar.organization", "pavelchervonenko")
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+tasks.jacocoTestReport {
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
