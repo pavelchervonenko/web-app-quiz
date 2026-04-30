@@ -1,0 +1,120 @@
+@startuml web-app-quiz-erd
+
+left to right direction
+hide circle
+
+skinparam linetype ortho
+skinparam ranksep 40
+skinparam nodesep 100
+skinparam shadowing false
+
+entity "users" as users {
+  * id : uuid
+  --
+  * email : varchar
+  * password_hash : varchar
+  * display_name : varchar
+  * role : varchar
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+entity "quizzes" as quizzes {
+  * id : uuid
+  --
+  * owner_id : uuid <<FK>>
+  * title : varchar
+  description : text
+  * status : varchar
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+entity "questions" as questions {
+  * id : uuid
+  --
+  * quiz_id : uuid <<FK>>
+  * text : text
+  image_url : varchar
+  * type : varchar
+  * time_limit_seconds : int
+  * points_correct : int
+  * points_incorrect : int
+  * position : int
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+entity "answer_options" as answer_options {
+  * id : uuid
+  --
+  * question_id : uuid <<FK>>
+  * text : text
+  * is_correct : boolean
+  * position : int
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+entity "quiz_sessions" as quiz_sessions {
+  * id : uuid
+  --
+  * quiz_id : uuid <<FK>>
+  * organizer_id : uuid <<FK>>
+  * room_code : varchar
+  * status : varchar
+  current_question_id : uuid <<FK>>
+  started_at : timestamp
+  finished_at : timestamp
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+entity "participant_sessions" as participant_sessions {
+  * id : uuid
+  --
+  * quiz_session_id : uuid <<FK>>
+  user_id : uuid <<FK, nullable>>
+  * display_name : varchar
+  * score : int
+  * joined_at : timestamp
+  finished_at : timestamp
+}
+
+entity "participant_answers" as participant_answers {
+  * id : uuid
+  --
+  * quiz_session_id : uuid <<FK>>
+  * participant_session_id : uuid <<FK>>
+  * question_id : uuid <<FK>>
+  * is_correct : boolean
+  * points_awarded : int
+  * answered_at : timestamp
+}
+
+entity "participant_answer_options" as participant_answer_options {
+  * id : uuid
+  --
+  * participant_answer_id : uuid <<FK>>
+  * answer_option_id : uuid <<FK>>
+}
+
+users ||--o{ quizzes
+quizzes ||--o{ questions
+questions ||--o{ answer_options
+
+quizzes ||--o{ quiz_sessions
+users ||--o{ quiz_sessions
+questions ||--o{ quiz_sessions
+
+quiz_sessions ||--o{ participant_sessions
+users |o--o{ participant_sessions
+
+quiz_sessions ||--o{ participant_answers
+participant_sessions ||--o{ participant_answers
+questions ||--o{ participant_answers
+
+participant_answers ||--o{ participant_answer_options
+answer_options ||--o{ participant_answer_options
+
+@enduml
