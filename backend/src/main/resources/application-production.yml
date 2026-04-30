@@ -3,7 +3,17 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
   flyway:
+    enabled: true
     url: ${DB_URL}
     user: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+
+server:
+  port: ${SERVER_PORT:8080}
