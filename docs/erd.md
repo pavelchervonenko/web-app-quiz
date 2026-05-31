@@ -19,8 +19,17 @@
 - `ParticipantSession` хранит участие конкретного игрока в конкретной quiz-сессии.
 - `ParticipantAnswer` и `ParticipantAnswerOption` хранят ответы участника.
 - Баллы за правильный и неправильный ответ задаются на уровне `Question`.
-- Фактически начисленные или снятые баллы сохраняются в `ParticipantAnswer.points_awarded`.
-- Итоговый счёт участника хранится в `ParticipantSession.score`.
+- Фактически начисленные баллы сохраняются в `ParticipantAnswer.points_awarded`.
+- Итоговый счёт участника хранится в `ParticipantSession.score` и не может быть отрицательным.
+- Временные поля в модели представлены как `Instant`, а в PostgreSQL — как `TIMESTAMP WITH TIME ZONE`.
+
+## Роли пользователей
+
+Пользователь может иметь одну из трёх ролей:
+
+- `PARTICIPANT` — участник, который проходит квизы.
+- `ORGANIZER` — организатор, который создаёт и запускает квизы.
+- `ADMIN` — администратор системы.
 
 ## Подключение участников
 
@@ -38,6 +47,7 @@
 
 - Участник подключается к quiz-сессии по `room_code`.
 - Ответы принимаются только во время активного вопроса.
+- Активное окно ответа задаётся полями `QuizSession.currentQuestionStartedAt` и `QuizSession.currentQuestionEndsAt`.
 - Backend сам проверяет корректность ответа.
 - Backend сам рассчитывает `points_awarded`.
 - Backend обновляет `ParticipantSession.score`.

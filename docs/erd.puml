@@ -14,9 +14,9 @@ entity "users" as users {
   * email : varchar
   * password_hash : varchar
   * display_name : varchar
-  * role : varchar
-  * created_at : timestamp
-  * updated_at : timestamp
+  * role : varchar <<PARTICIPANT|ORGANIZER|ADMIN>>
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
 entity "quizzes" as quizzes {
@@ -26,8 +26,8 @@ entity "quizzes" as quizzes {
   * title : varchar
   description : text
   * status : varchar
-  * created_at : timestamp
-  * updated_at : timestamp
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
 entity "questions" as questions {
@@ -41,8 +41,8 @@ entity "questions" as questions {
   * points_correct : int
   * points_incorrect : int
   * position : int
-  * created_at : timestamp
-  * updated_at : timestamp
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
 entity "answer_options" as answer_options {
@@ -52,8 +52,8 @@ entity "answer_options" as answer_options {
   * text : text
   * is_correct : boolean
   * position : int
-  * created_at : timestamp
-  * updated_at : timestamp
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
 entity "quiz_sessions" as quiz_sessions {
@@ -64,10 +64,12 @@ entity "quiz_sessions" as quiz_sessions {
   * room_code : varchar
   * status : varchar
   current_question_id : uuid <<FK>>
-  started_at : timestamp
-  finished_at : timestamp
-  * created_at : timestamp
-  * updated_at : timestamp
+  current_question_started_at : timestamptz
+  current_question_ends_at : timestamptz
+  started_at : timestamptz
+  finished_at : timestamptz
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
 entity "participant_sessions" as participant_sessions {
@@ -77,8 +79,10 @@ entity "participant_sessions" as participant_sessions {
   user_id : uuid <<FK, nullable>>
   * display_name : varchar
   * score : int
-  * joined_at : timestamp
-  finished_at : timestamp
+  * joined_at : timestamptz
+  finished_at : timestamptz
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
 entity "participant_answers" as participant_answers {
@@ -89,7 +93,9 @@ entity "participant_answers" as participant_answers {
   * question_id : uuid <<FK>>
   * is_correct : boolean
   * points_awarded : int
-  * answered_at : timestamp
+  * answered_at : timestamptz
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
 entity "participant_answer_options" as participant_answer_options {
@@ -97,6 +103,8 @@ entity "participant_answer_options" as participant_answer_options {
   --
   * participant_answer_id : uuid <<FK>>
   * answer_option_id : uuid <<FK>>
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
 users ||--o{ quizzes
