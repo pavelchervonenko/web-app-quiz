@@ -47,12 +47,13 @@ dependencies {
 
     annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
 
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
     implementation("org.springframework.boot:spring-boot-flyway")
     implementation("org.flywaydb:flyway-core")
     runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
-    implementation("org.openapitools:jackson-databind-nullable:0.2.6")
 }
 
 tasks.withType<Test> {
