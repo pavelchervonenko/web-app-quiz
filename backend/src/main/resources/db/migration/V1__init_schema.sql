@@ -6,8 +6,7 @@ CREATE TABLE users (
     role VARCHAR(32) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT uk_users_email UNIQUE (email),
-    CONSTRAINT chk_users_role CHECK (role IN ('PARTICIPANT', 'ORGANIZER', 'ADMIN'))
+    CONSTRAINT uk_users_email UNIQUE (email)
 );
 
 CREATE TABLE quizzes (
@@ -18,8 +17,7 @@ CREATE TABLE quizzes (
     status VARCHAR(32) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT fk_quizzes_owner FOREIGN KEY (owner_id) REFERENCES users (id),
-    CONSTRAINT chk_quizzes_status CHECK (status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED'))
+    CONSTRAINT fk_quizzes_owner FOREIGN KEY (owner_id) REFERENCES users (id)
 );
 
 CREATE TABLE questions (
@@ -36,7 +34,6 @@ CREATE TABLE questions (
     updated_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT fk_questions_quiz FOREIGN KEY (quiz_id) REFERENCES quizzes (id),
     CONSTRAINT uk_questions_quiz_position UNIQUE (quiz_id, position),
-    CONSTRAINT chk_questions_type CHECK (type IN ('SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE')),
     CONSTRAINT chk_questions_time_limit CHECK (time_limit_seconds > 0),
     CONSTRAINT chk_questions_points_correct CHECK (points_correct >= 0),
     CONSTRAINT chk_questions_points_incorrect CHECK (points_incorrect >= 0),
@@ -72,10 +69,7 @@ CREATE TABLE quiz_sessions (
     CONSTRAINT fk_quiz_sessions_quiz FOREIGN KEY (quiz_id) REFERENCES quizzes (id),
     CONSTRAINT fk_quiz_sessions_organizer FOREIGN KEY (organizer_id) REFERENCES users (id),
     CONSTRAINT fk_quiz_sessions_current_question FOREIGN KEY (current_question_id) REFERENCES questions (id),
-    CONSTRAINT uk_quiz_sessions_room_code UNIQUE (room_code),
-    CONSTRAINT chk_quiz_sessions_status CHECK (
-        status IN ('WAITING', 'QUESTION_ACTIVE', 'QUESTION_CLOSED', 'FINISHED', 'CANCELLED')
-    )
+    CONSTRAINT uk_quiz_sessions_room_code UNIQUE (room_code)
 );
 
 CREATE TABLE participant_sessions (
