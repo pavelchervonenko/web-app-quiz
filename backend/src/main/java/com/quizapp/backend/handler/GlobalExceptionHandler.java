@@ -14,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -53,9 +54,9 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request, Map.of());
     }
 
-    @ExceptionHandler(ForbiddenException.class)
+    @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class})
     public ResponseEntity<ApiErrorResponse> handleForbiddenException(
-        ForbiddenException ex,
+        RuntimeException ex,
         HttpServletRequest request
     ) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request, Map.of());
