@@ -16,7 +16,7 @@ public interface QuizRepository extends JpaRepository<Quiz, UUID> {
 
     List<Quiz> findAllByOwnerIdAndStatusOrderByCreatedAtDesc(UUID ownerId, QuizStatus status);
 
-    @EntityGraph(attributePaths = {"questions", "questions.answerOptions"})
+    @EntityGraph(attributePaths = "questions")
     Optional<Quiz> findWithQuestionsById(UUID id);
 
     boolean existsByIdAndOwnerId(UUID id, UUID ownerId);
