@@ -18,6 +18,7 @@ public interface QuizSessionRepository extends JpaRepository<QuizSession, UUID> 
     @EntityGraph(attributePaths = {"quiz", "currentQuestion", "currentQuestion.answerOptions"})
     Optional<QuizSession> findWithStateByRoomCode(String roomCode);
 
+    @EntityGraph(attributePaths = {"quiz", "participantSessions"})
     List<QuizSession> findAllByOrganizerIdOrderByCreatedAtDesc(UUID organizerId);
 
     List<QuizSession> findAllByQuizIdOrderByCreatedAtDesc(UUID quizId);
