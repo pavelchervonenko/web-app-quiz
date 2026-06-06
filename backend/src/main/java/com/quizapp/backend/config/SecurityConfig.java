@@ -45,7 +45,9 @@ public class SecurityConfig {
                         "/swagger-ui.html",
                         "/swagger-ui/**",
                         "/api/auth/**",
-                        "/api-docs/**"
+                        "/api-docs/**",
+                        "/ws",
+                        "/ws/**"
                     ).permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/sessions/*/state").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/sessions/join").permitAll()
