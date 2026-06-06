@@ -23,17 +23,19 @@ import com.quizapp.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -127,52 +129,21 @@ public class QuizSessionControllerTest {
 
     @Test
     public void testLiveSessionFlow() throws Exception {
-        var startResponse = mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/sessions")
-                .with(organizerJwt()))
-            .andExpect(status().isCreated())
-            .andReturn()
-            .getResponse();
-
-        var sessionDTO = om.readValue(startResponse.getContentAsString(), QuizSessionDTO.class);
+        var sessionDTO = startSession();
         assertThat(sessionDTO.status()).isEqualTo(QuizSessionStatus.WAITING);
         assertThat(sessionDTO.roomCode()).isNotBlank();
 
-        var joinData = new HashMap<String, String>();
-        joinData.put("roomCode", sessionDTO.roomCode());
-        joinData.put("displayName", "Player One");
-
-        var joinResponse = mockMvc.perform(post("/api/sessions/join")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(om.writeValueAsString(joinData)))
-            .andExpect(status().isCreated())
-            .andReturn()
-            .getResponse();
-
-        var joinDTO = om.readValue(joinResponse.getContentAsString(), JoinQuizSessionResponse.class);
-
-        var nextResponse = mockMvc.perform(post("/api/sessions/" + sessionDTO.id() + "/questions/next")
-                .with(organizerJwt()))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse();
-
-        var activeState = om.readValue(nextResponse.getContentAsString(), SessionStateDTO.class);
+        var joinDTO = joinSession(sessionDTO.roomCode(), "Player One");
+        var activeState = showNextQuestion(sessionDTO.id());
         assertThat(activeState.status()).isEqualTo(QuizSessionStatus.QUESTION_ACTIVE);
         assertThat(activeState.currentQuestion().id()).isEqualTo(question.getId());
 
-        var answerData = new HashMap<String, Object>();
-        answerData.put("participantSessionId", joinDTO.participantSessionId());
-        answerData.put("questionId", question.getId());
-        answerData.put("selectedAnswerOptionIds", List.of(correctOption.getId()));
-
-        var answerResponse = mockMvc.perform(post("/api/sessions/" + sessionDTO.id() + "/answers")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(om.writeValueAsString(answerData)))
-            .andExpect(status().isCreated())
-            .andReturn()
-            .getResponse();
-
-        var answerDTO = om.readValue(answerResponse.getContentAsString(), SubmittedAnswerDTO.class);
+        var answerDTO = submitAnswer(
+            sessionDTO.id(),
+            joinDTO.participantSessionId(),
+            question.getId(),
+            List.of(correctOption.getId())
+        );
         assertThat(answerDTO.correct()).isTrue();
         assertThat(answerDTO.pointsAwarded()).isEqualTo(100);
         assertThat(answerDTO.totalScore()).isEqualTo(100);
@@ -212,6 +183,63 @@ public class QuizSessionControllerTest {
     }
 
     @Test
+    public void testSubmitAnswerRejectsDuplicateAnswer() throws Exception {
+        var sessionDTO = startSession();
+        var joinDTO = joinSession(sessionDTO.roomCode(), "Player One");
+        showNextQuestion(sessionDTO.id());
+
+        submitAnswer(
+            sessionDTO.id(),
+            joinDTO.participantSessionId(),
+            question.getId(),
+            List.of(correctOption.getId())
+        );
+
+        performSubmitAnswer(
+            sessionDTO.id(),
+            joinDTO.participantSessionId(),
+            question.getId(),
+            List.of(correctOption.getId())
+        ).andExpect(status().isConflict());
+
+        var participantSession = participantSessionRepository.findById(joinDTO.participantSessionId()).orElseThrow();
+        assertThat(participantSession.getScore()).isEqualTo(100);
+        assertThat(participantAnswerRepository.findAll()).hasSize(1);
+    }
+
+    @Test
+    public void testSubmitAnswerRejectsOptionFromAnotherQuestion() throws Exception {
+        var otherOption = createSecondQuestionOption();
+        var sessionDTO = startSession();
+        var joinDTO = joinSession(sessionDTO.roomCode(), "Player One");
+        showNextQuestion(sessionDTO.id());
+
+        performSubmitAnswer(
+            sessionDTO.id(),
+            joinDTO.participantSessionId(),
+            question.getId(),
+            List.of(otherOption.getId())
+        ).andExpect(status().isBadRequest());
+
+        assertThat(participantAnswerRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    public void testSubmitAnswerRejectsAnswerWhenQuestionIsNotActive() throws Exception {
+        var sessionDTO = startSession();
+        var joinDTO = joinSession(sessionDTO.roomCode(), "Player One");
+
+        performSubmitAnswer(
+            sessionDTO.id(),
+            joinDTO.participantSessionId(),
+            question.getId(),
+            List.of(correctOption.getId())
+        ).andExpect(status().isBadRequest());
+
+        assertThat(participantAnswerRepository.findAll()).isEmpty();
+    }
+
+    @Test
     public void testParticipantCannotStartSession() throws Exception {
         mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/sessions")
                 .with(participantJwt()))
@@ -233,6 +261,87 @@ public class QuizSessionControllerTest {
         answerOption.setCorrect(correct);
         answerOption.setPosition(position);
         return answerOption;
+    }
+
+    private AnswerOption createSecondQuestionOption() {
+        var secondQuestion = new Question();
+        secondQuestion.setQuiz(quiz);
+        secondQuestion.setText("What is Spring?");
+        secondQuestion.setType(QuestionType.SINGLE_CHOICE);
+        secondQuestion.setTimeLimitSeconds(30);
+        secondQuestion.setPointsCorrect(100);
+        secondQuestion.setPointsIncorrect(0);
+        secondQuestion.setPosition(2);
+
+        var secondQuestionOption = createAnswerOption("Framework", true, 1);
+        secondQuestion.addAnswer(secondQuestionOption);
+
+        return questionRepository.save(secondQuestion).getAnswerOptions().getFirst();
+    }
+
+    private QuizSessionDTO startSession() throws Exception {
+        var response = mockMvc.perform(post("/api/quizzes/" + quiz.getId() + "/sessions")
+                .with(organizerJwt()))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse();
+
+        return om.readValue(response.getContentAsString(), QuizSessionDTO.class);
+    }
+
+    private JoinQuizSessionResponse joinSession(String roomCode, String displayName) throws Exception {
+        var joinData = new HashMap<String, String>();
+        joinData.put("roomCode", roomCode);
+        joinData.put("displayName", displayName);
+
+        var response = mockMvc.perform(post("/api/sessions/join")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(om.writeValueAsString(joinData)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse();
+
+        return om.readValue(response.getContentAsString(), JoinQuizSessionResponse.class);
+    }
+
+    private SessionStateDTO showNextQuestion(UUID sessionId) throws Exception {
+        var response = mockMvc.perform(post("/api/sessions/" + sessionId + "/questions/next")
+                .with(organizerJwt()))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse();
+
+        return om.readValue(response.getContentAsString(), SessionStateDTO.class);
+    }
+
+    private SubmittedAnswerDTO submitAnswer(
+        UUID sessionId,
+        UUID participantSessionId,
+        UUID questionId,
+        List<UUID> selectedAnswerOptionIds
+    ) throws Exception {
+        var response = performSubmitAnswer(sessionId, participantSessionId, questionId, selectedAnswerOptionIds)
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse();
+
+        return om.readValue(response.getContentAsString(), SubmittedAnswerDTO.class);
+    }
+
+    private ResultActions performSubmitAnswer(
+        UUID sessionId,
+        UUID participantSessionId,
+        UUID questionId,
+        List<UUID> selectedAnswerOptionIds
+    ) throws Exception {
+        var answerData = new HashMap<String, Object>();
+        answerData.put("participantSessionId", participantSessionId);
+        answerData.put("questionId", questionId);
+        answerData.put("selectedAnswerOptionIds", selectedAnswerOptionIds);
+
+        return mockMvc.perform(post("/api/sessions/" + sessionId + "/answers")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(om.writeValueAsString(answerData)));
     }
 
     private RequestPostProcessor organizerJwt() {
