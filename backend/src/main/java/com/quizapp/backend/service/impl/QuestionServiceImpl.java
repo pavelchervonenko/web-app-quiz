@@ -106,6 +106,8 @@ public class QuestionServiceImpl implements QuestionService {
         questionMapper.updateEntityFromRequest(request, question);
 
         question.getAnswerOptions().clear();
+        questionRepository.flush();
+
         request.answerOptions().forEach(optionRequest -> {
             AnswerOption option = new AnswerOption();
             option.setText(optionRequest.text());

@@ -27,6 +27,7 @@ import com.quizapp.backend.repository.ParticipantSessionRepository;
 import com.quizapp.backend.repository.QuestionRepository;
 import com.quizapp.backend.repository.QuizRepository;
 import com.quizapp.backend.repository.QuizSessionRepository;
+import com.quizapp.backend.realtime.SessionRealtimePublisher;
 import com.quizapp.backend.service.CurrentUserService;
 import com.quizapp.backend.service.QuizSessionService;
 import com.quizapp.backend.util.RoomCodeGenerator;
@@ -61,6 +62,7 @@ public class QuizSessionServiceImpl implements QuizSessionService {
     private final QuestionRepository questionRepository;
     private final AnswerOptionRepository answerOptionRepository;
     private final ParticipantAnswerRepository participantAnswerRepository;
+    private final SessionRealtimePublisher sessionRealtimePublisher;
 
     @Override
     @Transactional
@@ -86,6 +88,8 @@ public class QuizSessionServiceImpl implements QuizSessionService {
         quizSession.setStartedAt(Instant.now());
 
         QuizSession savedSession = quizSessionRepository.save(quizSession);
+
+        publishSessionState(savedSession);
 
         return quizSessionMapper.toQuizSessionDTO(savedSession);
     }
@@ -137,6 +141,8 @@ public class QuizSessionServiceImpl implements QuizSessionService {
 
         ParticipantSession savedParticipantSession = participantSessionRepository.save(participantSession);
 
+        publishSessionState(quizSession);
+
         return new JoinQuizSessionResponse(
             quizSession.getId(),
             savedParticipantSession.getId(),
@@ -164,7 +170,7 @@ public class QuizSessionServiceImpl implements QuizSessionService {
         quizSession.setCurrentQuestionEndsAt(now.plusSeconds(nextQuestion.getTimeLimitSeconds()));
         quizSession.setStatus(QuizSessionStatus.QUESTION_ACTIVE);
 
-        return sessionStateAssembler.toDTO(quizSession);
+        return publishSessionState(quizSession);
     }
 
     @Override
@@ -183,7 +189,7 @@ public class QuizSessionServiceImpl implements QuizSessionService {
         quizSession.setStatus(QuizSessionStatus.QUESTION_CLOSED);
         quizSession.setCurrentQuestionEndsAt(Instant.now());
 
-        return sessionStateAssembler.toDTO(quizSession);
+        return publishSessionState(quizSession);
     }
 
     @Override
@@ -210,7 +216,7 @@ public class QuizSessionServiceImpl implements QuizSessionService {
             quizSession.setFinishedAt(now);
         }
 
-        return sessionStateAssembler.toDTO(quizSession);
+        return publishSessionState(quizSession);
     }
 
     @Override
@@ -286,6 +292,7 @@ public class QuizSessionServiceImpl implements QuizSessionService {
         participantSession.setScore(participantSession.getScore() + pointsAwarded);
 
         ParticipantAnswer savedAnswer = participantAnswerRepository.save(participantAnswer);
+        publishSessionState(quizSession);
 
         return new SubmittedAnswerDTO(
             savedAnswer.getId(),
@@ -297,6 +304,12 @@ public class QuizSessionServiceImpl implements QuizSessionService {
             participantSession.getScore(),
             savedAnswer.getAnsweredAt()
         );
+    }
+
+    private SessionStateDTO publishSessionState(QuizSession quizSession) {
+        SessionStateDTO state = sessionStateAssembler.toDTO(quizSession);
+        sessionRealtimePublisher.publishState(quizSession.getRoomCode(), state);
+        return state;
     }
 
     private void checkOwner(Quiz quiz, User currentUser) {
