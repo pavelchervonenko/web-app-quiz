@@ -1,13 +1,23 @@
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/quiz}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:quiz}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:}}
+    hikari:
+      maximum-pool-size: ${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:10}
+      minimum-idle: ${SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE:2}
 
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
 
+  flyway:
+    enabled: true
+
 server:
   port: ${SERVER_PORT:8080}
+
+app:
+  cors:
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:https://your-domain.com}

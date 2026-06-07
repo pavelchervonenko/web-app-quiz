@@ -21,6 +21,10 @@ frontend/dist/
 .env.local
 .env.production
 
+# Local deploy secrets
+deploy/secrets/*.pem
+deploy/secrets/*.key
+
 # OS
 .DS_Store
 Thumbs.db
