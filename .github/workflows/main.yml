@@ -1,12 +1,15 @@
-name: Java CI
+name: CI
 
 on:
-  - push
-  - pull_request
+  push:
+  pull_request:
 
 jobs:
-  build:
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     defaults:
       run:
@@ -20,32 +23,58 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Execute Gradle build
+      - name: Build and test
         run: ./gradlew build
 
       - name: Generate coverage report
         run: ./gradlew jacocoTestReport
 
       - name: Cache SonarQube packages
+        if: ${{ env.SONAR_TOKEN != '' }}
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
-
-      - name: Build and analyze
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: SonarQube analysis
+        if: ${{ env.SONAR_TOKEN != '' }}
         run: ./gradlew sonar --info
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  docker-config:
+    name: Docker Compose Config
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose config
+        run: docker compose --env-file .env.example config
