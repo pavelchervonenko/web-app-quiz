@@ -89,7 +89,7 @@ curl -i -X POST https://your-domain.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "organizer@example.com",
-    "password": "password123"
+    "password": "DEV_ORGANIZER_PASSWORD"
   }'
 ```
 

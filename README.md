@@ -40,7 +40,7 @@ Dev organizer:
 
 ```text
 organizer@example.com
-password123
+DEV_ORGANIZER_PASSWORD
 ```
 
 ## Production-like Запуск

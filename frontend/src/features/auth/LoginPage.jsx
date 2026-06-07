@@ -7,7 +7,7 @@ import { FormError } from '../../shared/ui/FormError.jsx';
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: 'organizer@example.com', password: 'password123' });
+  const [form, setForm] = useState({ email: 'organizer@example.com', password: '' });
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
