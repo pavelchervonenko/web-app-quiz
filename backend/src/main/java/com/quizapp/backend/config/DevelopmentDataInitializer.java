@@ -4,6 +4,7 @@ import com.quizapp.backend.model.User;
 import com.quizapp.backend.model.enums.UserRole;
 import com.quizapp.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,22 +15,25 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DevelopmentDataInitializer implements CommandLineRunner {
 
-    private static final String ORGANIZER_EMAIL = "organizer@example.com";
-    private static final String ORGANIZER_PASSWORD = "password123";
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.development.seed.organizer-email}")
+    private String organizerEmail;
+
+    @Value("${app.development.seed.organizer-password}")
+    private String organizerPassword;
+
     @Override
     public void run(String... args) {
-        if (userRepository.existsByEmail(ORGANIZER_EMAIL)) {
+        if (userRepository.existsByEmail(organizerEmail)) {
             return;
         }
 
         User organizer = new User();
-        organizer.setEmail(ORGANIZER_EMAIL);
+        organizer.setEmail(organizerEmail);
         organizer.setDisplayName("Development Organizer");
-        organizer.setPasswordHash(passwordEncoder.encode(ORGANIZER_PASSWORD));
+        organizer.setPasswordHash(passwordEncoder.encode(organizerPassword));
         organizer.setRole(UserRole.ORGANIZER);
 
         userRepository.save(organizer);

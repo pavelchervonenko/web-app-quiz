@@ -15,3 +15,9 @@ spring:
     console:
       enabled: true
       path: /h2-console
+
+app:
+  development:
+    seed:
+      organizer-email: ${DEV_ORGANIZER_EMAIL:organizer@example.com}
+      organizer-password: ${DEV_ORGANIZER_PASSWORD:password123}
